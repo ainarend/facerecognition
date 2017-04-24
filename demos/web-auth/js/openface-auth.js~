@@ -10,6 +10,7 @@ window.URL = window.URL ||
 
 /*var defaultPersonTmpl = Handlebars.compile($("#defaultPersonTmpl").html()),
     peopleTableTmpl = Handlebars.compile($("#peopleTableTmpl").html());*/
+var username = "";
 var vid = '', vidReady = false;
 var defaultTok = 1, defaultNumNulls = 20;
 var tok = defaultTok,
@@ -18,6 +19,7 @@ var tok = defaultTok,
     training = false;
 var numNulls, sentTimes, receivedTimes;
 var socket, socketName;
+var images = [];
 $(function() {
 
    	 $('#login-form-link').click(function(e) {
@@ -36,21 +38,26 @@ $(function() {
 	});
 	$('#register-submit').click(function(e) {
 		e.preventDefault();
-		var username = $('#register-form #username').val();
+		username = $('#register-form #username').val();
 		localStorage.username = username;
+
+   		defaultPerson = people.length;
+   		people.push(username);
+
 		console.log(localStorage.username);
 		var regForm = $('#register-form').html();
-		$('#register-form').html('<h3>'+username+' training</h3><div id="detectedFaces"><button id="train">Take a picture</button><video id="videoel" width="400" height="300" preload="auto" loop></video></div>');
-vid = document.getElementById("videoel");
-if (navigator.getUserMedia) {
-    var videoSelector = {video : true};
-    navigator.getUserMedia(videoSelector, umSuccess, function() {
-        alert("Error fetching video from webcam");
-    });
-} else {
-    alert("No webcam detected.");
-}
+		$('#register-form').html('<h3>'+username+' training</h3><button type="button" onclick="trainingChkCallback()" id="train">Take a picture</button><div id="detectedFaces"><video id="videoel" width="400" height="300" preload="auto" loop></video></div>');
+		vid = document.getElementById("videoel");
+		if (navigator.getUserMedia) {
+    			var videoSelector = {video : true};
+    			navigator.getUserMedia(videoSelector, umSuccess, function() {
+        		alert("Error fetching video from webcam");
+    		});
+		} else {
+    			alert("No webcam detected.");
+		}
 		createSocket("ws:" + window.location.hostname + ":9000", "Local");
+		
 	});
 	
 	$('#login-submit').click(function(e) {
@@ -69,7 +76,7 @@ function trainingChkCallback() {
     if (socket != null) {
         var msg = {
             'type': 'TRAINING',
-            'val': 1
+            'val': true
         };
         socket.send(JSON.stringify(msg));
     }
@@ -81,13 +88,19 @@ function createSocket(address, name) {
     socketName = name;
     socket.binaryType = "arraybuffer";
     socket.onopen = function() {
-        $("#serverStatus").html("Connected to " + name);
+	//init socket
         sentTimes = [];
         receivedTimes = [];
         tok = defaultTok;
         numNulls = 0
-
         socket.send(JSON.stringify({'type': 'NULL'}));
+        sentTimes.push(new Date());
+	//add the person
+        var msg = {
+            'type': 'ADD_PERSON',
+            'val': username
+        };
+        socket.send(JSON.stringify(msg));
         sentTimes.push(new Date());
     }
     socket.onmessage = function(e) {
@@ -114,29 +127,33 @@ function createSocket(address, name) {
                 image: getDataURLFromRGB(j.content),
                 representation: j.representation
             });
-            redrawPeople();
+	    console.log(images);
+            //redrawPeople();
         } else if (j.type == "IDENTITIES") {
-            var h = "Last updated: " + (new Date()).toTimeString();
-            h += "<ul>";
+            //var h = "Last updated: " + (new Date()).toTimeString();
+            //h += "<ul>";
             var len = j.identities.length
             if (len > 0) {
                 for (var i = 0; i < len; i++) {
-                    var identity = "Unknown";
+                    var identity = username;
                     var idIdx = j.identities[i];
                     if (idIdx != -1) {
                         identity = people[idIdx];
                     }
-                    h += "<li>" + identity + "</li>";
+            //        h += "<li>" + identity + "</li>";
                 }
-            } else {
-                h += "<li>Nobody detected.</li>";
+            //} else {
+            //    h += "<li>Nobody detected.</li>";
             }
-            h += "</ul>"
-            $("#peopleInVideo").html(h);
+            //h += "</ul>"
+            //$("#peopleInVideo").html(h);
         } else if (j.type == "ANNOTATED") {
             $("#detectedFaces").html(
                 "<img src='" + j['content'] + "' width='430px'></img>"
             )
+	    images.push(j['content']);
+	    //localStorage.images = JSON.stringify(images);
+	    //console.log(localStorage);
         } else if (j.type == "TSNE_DATA") {
             BootstrapDialog.show({
                 message: "<img src='" + j['content'] + "' width='100%'></img>"
@@ -177,9 +194,6 @@ function sendFrameLoop() {
         canvas.width = vid.width;
         canvas.height = vid.height;
         var cc = canvas.getContext('2d');
-	vid.onload = function () {
-        	cc.drawImage(vid, 0, 0, vid.width, vid.height);
-	};
         cc.drawImage(vid, 0, 0, vid.width, vid.height);
         var apx = cc.getImageData(0, 0, vid.width, vid.height);
 
@@ -193,7 +207,9 @@ function sendFrameLoop() {
         socket.send(JSON.stringify(msg));
         tok--;
     }
-    setTimeout(function() {requestAnimFrame(sendFrameLoop)}, 250);
+    setTimeout(function() {
+	requestAnimFrame(sendFrameLoop);
+    }, 250);
 }
 
 function umSuccess(stream) {
@@ -203,9 +219,11 @@ function umSuccess(stream) {
         vid.src = (window.URL && window.URL.createObjectURL(stream)) ||
             stream;
     }
-    vid.play();
+    vid.addEventListener('loadeddata', function() {
+	vid.play();
     vidReady = true;
     sendFrameLoop();
+    }, false);
 }
 
 

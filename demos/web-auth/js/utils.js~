@@ -8,7 +8,6 @@ window.requestAnimFrame = (function() {
         window.oRequestAnimationFrame ||
         window.msRequestAnimationFrame ||
         function(/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
-console.log("asd");
             return window.setTimeout(callback, 1000/60);
         };
 })();

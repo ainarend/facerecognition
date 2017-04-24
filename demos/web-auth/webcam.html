@@ -5,61 +5,50 @@
   <meta charset="UTF-8"/>
 </head>
 <body>
-  <button id="play">Play</button>
-  <button id="pause">Pause</button>
-  <button id="stop">Stop</button>
-  <br />
-  <video id="camera"></video>
+  <video id="vid"></video>
+<canvas id="vidCanvas"> </canvas>
 
   <script>
-    window.addEventListener("load", function() {
-      var camera = document.getElementById("camera");
-      var play = document.getElementById("play");
-      var pause = document.getElementById("pause");
-      var stop = document.getElementById("stop");
-      var constraints = {audio:true, video:true};
+    var $vid = document.getElementById('vid');
+var $vidCanvas = document.getElementById('vidCanvas');
+var $vidCanvasCtx = $vidCanvas.getContext("2d");
+var videoActuallyPlaying = false;
 
-      function success(stream) {
-        camera.src = stream;
-        camera.play();
-        disableButtons(true, false, false);
-      }
+navigator.getUserMedia = navigator.getUserMedia       || 
+                         navigator.webkitGetUserMedia ||
+                         navigator.mozGetUserMedia    ||
+                         navigator.msGetUserMedia;
 
-      function failure(error) {
-        alert(JSON.stringify(error));
-      }
+window.URL = window.URL || window.webkitURL;
+navigator.getUserMedia({video: true, audio: false}, function(localMediaStream) { 
+  $vid.autoplay = true;
+  $vid.src = window.URL.createObjectURL(localMediaStream);
+}, function(error) { console.log(error); });
 
-      function disableButtons(disPlay, disPause, disStop) {
-        play.disabled = disPlay;
-        pause.disabled = disPause;
-        stop.disabled = disStop;
-      }
+$vid.addEventListener('play', function() {
+  drawVideo();
+});
 
-      disableButtons(true, true, true);
-
-navigator.getUserMedia = ( navigator.getUserMedia ||
-                       navigator.webkitGetUserMedia ||
-                       navigator.mozGetUserMedia ||
-                       navigator.msGetUserMedia);
-
-        navigator.getUserMedia(constraints, success, failure);
-
-      play.addEventListener("click", function() {
-        disableButtons(true, false, false);
-        camera.play();
-      }, false);
-
-      pause.addEventListener("click", function() {
-        disableButtons(false, true, false);
-        camera.pause();
-      }, false);
-
-      stop.addEventListener("click", function() {
-        disableButtons(true, true, true);
-        camera.pause();
-        camera.src = "";
-      }, false);
-    }, false);
+function drawVideo() {
+  try {
+    $vidCanvasCtx.drawImage($vid, 0, 0, $vidCanvas.width, $vidCanvas.height);
+      console.log("Started playing");
+    // we'll only reach here if no exception was thrown
+    if (!videoActuallyPlaying) { // just started playing
+      $vidCanvas.width = $vid.clientWidth;
+      $vidCanvas.height = $vid.clientHeight;
+      videoActuallyPlaying = true;
+    }
+  } catch (e) {
+    if (e.name == "NS_ERROR_NOT_AVAILABLE") {
+      // Wait a bit before trying again; you may wish to change the
+      // length of this delay.
+      setTimeout(drawVideo, 100);
+    } else {
+      throw e;
+    }
+  }
+}
   </script>
 </body>
 </html>
