@@ -61,7 +61,7 @@ parser.add_argument('--networkModel', type=str, help="Path to Torch network mode
                     default=os.path.join(openfaceModelDir, 'nn4.small2.v1.t7'))
 parser.add_argument('--imgDim', type=int,
                     help="Default image dimension.", default=96)
-parser.add_argument('--cuda', action='store_true')
+parser.add_argument('--cuda', type=bool, default=False)
 parser.add_argument('--unknown', type=bool, default=False,
                     help='Try to predict unknown people')
 parser.add_argument('--port', type=int, default=9000,
@@ -111,25 +111,19 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             msg['type'], len(raw)))
         if msg['type'] == "ALL_STATE":
             self.loadState(msg['images'], msg['training'], msg['people'])
-	    #print("all state")
         elif msg['type'] == "NULL":
-	    #print("null")
             self.sendMessage('{"type": "NULL"}')
         elif msg['type'] == "FRAME":
-	    #print("frame")
             self.processFrame(msg['dataURL'], msg['identity'])
             self.sendMessage('{"type": "PROCESSED"}')
         elif msg['type'] == "TRAINING":
-	    #print("training")
             self.training = msg['val']
             if not self.training:
                 self.trainSVM()
         elif msg['type'] == "ADD_PERSON":
-	    #print("add person")
             self.people.append(msg['val'].encode('ascii', 'ignore'))
             print(self.people)
         elif msg['type'] == "UPDATE_IDENTITY":
-	    #print("update ident")
             h = msg['hash'].encode('ascii', 'ignore')
             if h in self.images:
                 self.images[h].identity = msg['idx']
@@ -138,7 +132,6 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             else:
                 print("Image not found.")
         elif msg['type'] == "REMOVE_IMAGE":
-	    #print("remove image")
             h = msg['hash'].encode('ascii', 'ignore')
             if h in self.images:
                 del self.images[h]
@@ -147,7 +140,6 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             else:
                 print("Image not found.")
         elif msg['type'] == 'REQ_TSNE':
-	    #print("tsne")
             self.sendTSNE(msg['people'])
         else:
             print("Warning: Unknown message type: {}".format(msg['type']))
@@ -162,7 +154,6 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             h = jsImage['hash'].encode('ascii', 'ignore')
             self.images[h] = Face(np.array(jsImage['representation']),
                                   jsImage['identity'])
-	    #print("+ Images: {}.".format(self.images))
 
         for jsPerson in jsPeople:
             self.people.append(jsPerson.encode('ascii', 'ignore'))
@@ -238,8 +229,7 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             return
         else:
             (X, y) = d
-	    y = set(y)
-            numIdentities = len(y)
+            numIdentities = len(set(y + [-1]))
             if numIdentities <= 1:
                 return
 
@@ -250,7 +240,7 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
                  'gamma': [0.001, 0.0001],
                  'kernel': ['rbf']}
             ]
-            self.svm = GridSearchCV(SVC(C=1), param_grid, cv=5).fit(X, (y+[-1]))
+            self.svm = GridSearchCV(SVC(C=1), param_grid, cv=5).fit(X, y)
 
     def processFrame(self, dataURL, identity):
         head = "data:image/jpeg;base64,"
@@ -290,7 +280,6 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             phash = str(imagehash.phash(Image.fromarray(alignedFace)))
             if phash in self.images:
                 identity = self.images[phash].identity
-	    	#print("+ Images: {}.".format(self.images))
             else:
                 rep = net.forward(alignedFace)
                 # print(rep)

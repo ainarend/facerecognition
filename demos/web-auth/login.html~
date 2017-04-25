@@ -24,7 +24,7 @@ limitations under the License.
         <link href="vendor/css/bootstrap.min.css" rel="stylesheet">
         <link href="vendor/css/bootstrap-toggle.min.css" rel="stylesheet">
         <link href="css/main.css" rel="stylesheet">
-        <link href="css/auth.css" rel="stylesheet">
+        <link href="css/login.css" rel="stylesheet">
     </head>
     <body>
 	<div class="container">
@@ -34,10 +34,10 @@ limitations under the License.
 					<div class="panel-heading">
 						<div class="row">
 							<div class="col-xs-6">
-								<a href="#"id="login-form-link">Login</a>
+								<a href="login.html"id="login-form-link">Login</a>
 							</div>
 							<div class="col-xs-6">
-								<a href="#" class="active"  id="register-form-link">Register</a>
+								<a href="register.html" class="active"  id="register-form-link">Register</a>
 							</div>
 						</div>
 						<hr>
@@ -45,7 +45,7 @@ limitations under the License.
 					<div class="panel-body">
 						<div class="row">
 							<div class="col-lg-12">
-								<form id="login-form" role="form" style="display: none;">
+								<form id="login-form" role="form">
 									<div class="form-group">
 										<input type="text" name="username" id="username" tabindex="1" class="form-control" placeholder="Username" value="">
 									</div>
@@ -73,27 +73,13 @@ limitations under the License.
 										</div>
 									</div>
 								</form>
-								<form id="register-form" role="form" style="display: block;">
-									<div class="form-group">
-										<input type="text" name="username" id="username" tabindex="1" class="form-control" placeholder="Username" value="">
-									</div>
-									<div class="form-group">
-										<input type="email" name="email" id="email" tabindex="1" class="form-control" placeholder="Email Address" value="">
-									</div>
-									<div class="form-group">
-										<input type="password" name="password" id="password" tabindex="2" class="form-control" placeholder="Password">
-									</div>
-									<div class="form-group">
-										<input type="password" name="confirm-password" id="confirm-password" tabindex="2" class="form-control" placeholder="Confirm Password">
-									</div>
-									<div class="form-group">
-										<div class="row">
-											<div class="col-sm-6 col-sm-offset-3">
-												<button name="register-submit"id="register-submit" tabindex="4" class="form-control btn btn-register">Register Now</button>
-											</div>
-										</div>
-									</div>
-								</form>
+								<div id="camera">
+									<h3>Show your face</h3>
+		       							<p><span id="add-name"></span>, to login, we have to detect you in the video.</p>
+									<video id="videoel" width="400" height="300" preload="auto" loop></video>
+		       							<div id="detectedFaces"></div>
+									<div id="status">Nobody detected.</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -107,66 +93,5 @@ limitations under the License.
     <script src="vendor/js/bootstrap-toggle.min.js"></script>
     <script src="vendor/js/jstat.min.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/openface-demo.js"></script>
-    <script type="text/javascript">
-
-	$(function() {
-
-   	 $('#login-form-link').click(function(e) {
-		$("#login-form").delay(100).fadeIn(100);
- 		$("#register-form").fadeOut(100);
-		$('#register-form-link').removeClass('active');
-		$(this).addClass('active');
-		e.preventDefault();
-	});
-	$('#register-form-link').click(function(e) {
-		$("#register-form").delay(100).fadeIn(100);
- 		$("#login-form").fadeOut(100);
-		$('#login-form-link').removeClass('active');
-		$(this).addClass('active');
-		e.preventDefault();
-	});
-	$('#register-submit').click(function(e) {
-		e.preventDefault();
-		var username = $('#register-form #username').val();
-		var password = $('#register-form #password').val();
-		localStorage.username = username;
-		localStorage.password = password;
-		console.log(localStorage.username);
-		var regForm = $('#register-form').html();
-		$('#register-form').html('<div id="detectedFaces"></div>');
-	});
-	$('#login-submit').click(function(e) {
-		e.preventDefault();
-		console.log("log in");
-	});
-
-});
-
-
-     /*var vid = document.getElementById('videoel'),
-         vidReady = false;
-     var defaultPersonTmpl = Handlebars.compile($("#defaultPersonTmpl").html()),
-         peopleTableTmpl = Handlebars.compile($("#peopleTableTmpl").html());
-     var defaultTok = 1, defaultNumNulls = 20;*/
-     var tok = defaultTok,
-         people = [], defaultPerson = -1,
-         images = [],
-         training = false;
-     var numNulls, sentTimes, receivedTimes;
-     var socket, socketName;
-
-     if (navigator.getUserMedia) {
-         var videoSelector = {video : true};
-         navigator.getUserMedia(videoSelector, umSuccess, function() {
-             alert("Error fetching video from webcam");
-         });
-     } else {
-         alert("No webcam detected.");
-     }
-
-     // redrawPeople();
-     // createSocket("ws://facerec.cmusatyalab.org:9000", "CMU");
-     createSocket("ws:" + window.location.hostname + ":9000", "Local");
-    </script>
+    <script src="js/login.js"></script>
 </html>

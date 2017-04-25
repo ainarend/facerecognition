@@ -238,8 +238,10 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             return
         else:
             (X, y) = d
+	    #print (len(y))
 	    y = set(y)
             numIdentities = len(y)
+	    #print (numIdentities)
             if numIdentities <= 1:
                 return
 
